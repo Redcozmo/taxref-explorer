@@ -1,11 +1,12 @@
 """
-convert.py — Conversion du fichier TAXREF .txt (TSV) vers Parquet + DuckDB
+convert.py — Conversion du fichier TAXREF .txt (TSV) vers Parquet + CSV + DuckDB
 
 Usage :
     python convert.py --input TAXREF_v17_0.txt
 
 Le script génère :
     - data/taxref.parquet   (source de vérité compressée)
+    - data/taxref.csv       (export CSV, encodage UTF-8)
     - data/taxref.duckdb    (base requêtable via SQL)
 """
 
@@ -30,6 +31,7 @@ CATEGORICAL_COLS = [
 def convert(input_path: str, output_dir: str = "data") -> None:
     os.makedirs(output_dir, exist_ok=True)
     parquet_path = os.path.join(output_dir, "taxref.parquet")
+    csv_path     = os.path.join(output_dir, "taxref.csv")
     duckdb_path  = os.path.join(output_dir, "taxref.duckdb")
 
     # --- 1. Lecture du TSV ---
@@ -66,9 +68,16 @@ def convert(input_path: str, output_dir: str = "data") -> None:
     size_mb = os.path.getsize(parquet_path) / 1_048_576
     print(f"   ✅ {size_mb:.1f} Mo ({time.time()-t1:.1f}s)")
 
-    # --- 5. Création DuckDB ---
-    print(f"🦆 Création DuckDB → {duckdb_path} ...")
+    # --- 5. Export CSV (UTF-8, séparateur virgule) ---
+    print(f"📄 Export CSV → {csv_path} ...")
     t2 = time.time()
+    df.to_csv(csv_path, index=False, encoding="utf-8")
+    size_mb_csv = os.path.getsize(csv_path) / 1_048_576
+    print(f"   ✅ {size_mb_csv:.1f} Mo ({time.time()-t2:.1f}s)")
+
+    # --- 6. Création DuckDB ---
+    print(f"🦆 Création DuckDB → {duckdb_path} ...")
+    t3 = time.time()
     if os.path.exists(duckdb_path):
         os.remove(duckdb_path)
 
@@ -82,10 +91,11 @@ def convert(input_path: str, output_dir: str = "data") -> None:
 
     row_count = con.execute("SELECT COUNT(*) FROM taxon").fetchone()[0]
     con.close()
-    print(f"   ✅ {row_count:,} taxons indexés ({time.time()-t2:.1f}s)")
+    print(f"   ✅ {row_count:,} taxons indexés ({time.time()-t3:.1f}s)")
 
     print(f"\n✨ Conversion terminée en {time.time()-t0:.1f}s")
     print(f"   Parquet : {parquet_path}  ({os.path.getsize(parquet_path)/1_048_576:.1f} Mo)")
+    print(f"   CSV     : {csv_path}  ({os.path.getsize(csv_path)/1_048_576:.1f} Mo)")
     print(f"   DuckDB  : {duckdb_path}  ({os.path.getsize(duckdb_path)/1_048_576:.1f} Mo)")
 
 
