@@ -1,0 +1,17 @@
+# Données — fichiers lourds, ne pas versionner
+data/
+input_data/
+
+# Environnement Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Streamlit cache
+.streamlit/cache/
+
+# Système
+.DS_Store
+Thumbs.db

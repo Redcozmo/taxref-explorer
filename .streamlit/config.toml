@@ -1,0 +1,8 @@
+[theme]
+# Thème TAXREF Explorer — tons naturels / biodiversité
+
+primaryColor = "#3A7D44"             # vert forêt — boutons, sliders, focus
+backgroundColor = "#F8F9F3"          # blanc cassé légèrement végétal
+secondaryBackgroundColor = "#EDF2E8" # vert très pâle — sidebar, widgets, expanders
+textColor = "#1C2B1E"                # vert très foncé, quasi noir
+font = "sans serif"
