@@ -15,3 +15,7 @@ __pycache__/
 # Système
 .DS_Store
 Thumbs.db
+
+
+# Other
+to_do.txt
