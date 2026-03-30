@@ -1,5 +1,7 @@
 # Données — fichiers lourds, ne pas versionner
-data/
+data/*.duckdb
+data/*.csv
+# data/*.parquet
 input_data/
 
 # Environnement Python
@@ -19,3 +21,4 @@ Thumbs.db
 
 # Other
 to_do.txt
+.~lock.*#
