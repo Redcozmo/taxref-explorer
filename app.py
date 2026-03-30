@@ -20,21 +20,41 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Sidebar — infos générales
+# Initialisation du session_state
+# ---------------------------------------------------------------------------
+if "regne_actif" not in st.session_state:
+    st.session_state.regne_actif = None
+
+# ---------------------------------------------------------------------------
+# Sidebar — infos générales + règne actif
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.title("🌿 TAXREF Explorer")
     st.caption("Exploration de la base nationale de référence des taxons")
 
     try:
-        total = queries.total_count()
-        st.metric("Total taxons", f"{total:,}")
+        total = queries.total_count(st.session_state.regne_actif)
+        st.metric(
+            "Taxons" if not st.session_state.regne_actif else f"Taxons ({st.session_state.regne_actif})",
+            f"{total:,}"
+        )
     except Exception:
         st.warning("Base non chargée.")
+
+    # Affichage du règne actif
+    if st.session_state.regne_actif:
+        st.success(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
+        if st.button("✖ Réinitialiser le profil", use_container_width=True):
+            st.session_state.regne_actif = None
+            st.cache_data.clear()
+            st.rerun()
+    else:
+        st.info("Aucun profil sélectionné\n\nToute la base est accessible.")
 
     st.divider()
     st.markdown(
         "**Navigation**\n"
+        "- 👤 Profil\n"
         "- 🔎 Filtrer\n"
         "- 🔍 Rechercher\n"
         "- 📋 Détail taxon\n"
@@ -44,7 +64,8 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Tabs principales
 # ---------------------------------------------------------------------------
-tab_filter, tab_search, tab_detail, tab_stats = st.tabs([
+tab_profil, tab_filter, tab_search, tab_detail, tab_stats = st.tabs([
+    "👤 Profil",
     "🔎 Filtrer",
     "🔍 Rechercher",
     "📋 Détail taxon",
@@ -52,21 +73,93 @@ tab_filter, tab_search, tab_detail, tab_stats = st.tabs([
 ])
 
 
+# ── TAB 0 : PROFIL ─────────────────────────────────────────────────────────
+with tab_profil:
+    st.subheader("Sélection du profil taxonomique")
+    st.caption(
+        "Le profil filtre l'ensemble de l'application sur un règne. "
+        "Tous les onglets (Filtrer, Rechercher, Statistiques…) travailleront "
+        "uniquement sur les taxons de ce règne."
+    )
+
+    try:
+        regnes = queries.get_regnes()
+    except Exception:
+        regnes = []
+        st.error("Impossible de charger les règnes.")
+
+    if regnes:
+        # Grille de boutons — un par règne
+        EMOJIS = {
+            "Animalia":  "🐾",
+            "Plantae":   "🌿",
+            "Fungi":     "🍄",
+            "Chromista": "🔬",
+            "Bacteria":  "🦠",
+            "Archaea":   "🧬",
+            "Protozoa":  "🔬",
+            "Viruses":   "🧫",
+        }
+
+        st.markdown("#### Choisir un règne")
+        cols = st.columns(4)
+        for i, regne in enumerate(regnes):
+            emoji = EMOJIS.get(regne, "🌐")
+            with cols[i % 4]:
+                actif = st.session_state.regne_actif == regne
+                label = f"{emoji} **{regne}**" if actif else f"{emoji} {regne}"
+                if st.button(
+                    label,
+                    key=f"profil_{regne}",
+                    use_container_width=True,
+                    type="primary" if actif else "secondary",
+                ):
+                    if actif:
+                        # Désactiver le profil si on reclique dessus
+                        st.session_state.regne_actif = None
+                    else:
+                        st.session_state.regne_actif = regne
+                    st.cache_data.clear()
+                    st.rerun()
+
+        st.divider()
+
+        # Résumé du profil actif
+        if st.session_state.regne_actif:
+            r = st.session_state.regne_actif
+            total_r = queries.total_count(r)
+            st.success(
+                f"✅ Profil **{r}** actif — "
+                f"**{total_r:,}** taxons disponibles dans les autres onglets."
+            )
+        else:
+            total_all = queries.total_count()
+            st.info(
+                f"Aucun profil sélectionné — "
+                f"**{total_all:,}** taxons accessibles (base complète)."
+            )
+
+
 # ── TAB 1 : FILTRER ────────────────────────────────────────────────────────
 with tab_filter:
     st.subheader("Filtrer par attribut")
     st.caption("Sélectionne une ou plusieurs valeurs pour filtrer les taxons.")
 
-    # Colonnes catégorielles proposées au filtrage
-    FILTER_COLS = ["REGNE", "PHYLUM", "CLASSE", "ORDRE", "FAMILLE",
-                   "GROUP1_INPN", "GROUP2_INPN"]
+    if st.session_state.regne_actif:
+        st.info(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
+
+    # REGNE exclu des filtres si un profil est actif (déjà filtré)
+    FILTER_COLS = ["REGNE", "PHYLUM", "CLASSE", "ORDRE", "FAMILLE", "GROUP1_INPN", "GROUP2_INPN"]
+    if st.session_state.regne_actif:
+        FILTER_COLS = [c for c in FILTER_COLS if c != "REGNE"]
+
     available_cols = [c for c in FILTER_COLS if c in queries.get_columns()]
 
     cols = st.columns(3)
     filters = {}
     for i, col in enumerate(available_cols):
         with cols[i % 3]:
-            options = ["(tous)"] + queries.get_distinct_values(col)
+            options = ["(tous)"] + queries.get_distinct_values(col, st.session_state.regne_actif)
             choice = st.selectbox(col.capitalize(), options, key=f"filter_{col}")
             if choice != "(tous)":
                 filters[col] = choice
@@ -75,15 +168,10 @@ with tab_filter:
 
     if filters:
         with st.spinner("Requête en cours…"):
-            df = queries.filter_taxons(filters, limit=limit)
+            df = queries.filter_taxons(filters, st.session_state.regne_actif, limit=limit)
 
         st.success(f"{len(df):,} taxon(s) trouvé(s)")
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            height=420,
-        )
+        st.dataframe(df, use_container_width=True, hide_index=True, height=420)
         st.download_button(
             "⬇️ Télécharger CSV",
             df.to_csv(index=False).encode("utf-8"),
@@ -99,9 +187,12 @@ with tab_search:
     st.subheader("Recherche dans un attribut")
     st.caption("Recherche partielle, insensible à la casse.")
 
+    if st.session_state.regne_actif:
+        st.info(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
+
     all_cols = queries.get_columns()
 
-    col1, col2, col3 = st.columns([2, 4, 1])
+    col1, col2 = st.columns([1, 3])
     with col1:
         search_col = st.selectbox(
             "Attribut",
@@ -110,14 +201,14 @@ with tab_search:
             key="search_col",
         )
     with col2:
-        search_val = st.text_input("Valeur recherchée", key="search_val",
-                                   placeholder="ex : Canis, Quercus, Parus…")
-    with col3:
-        search_limit = st.number_input("Max", 10, 2000, 200, 10, key="search_limit")
+        search_val = st.text_input(
+            "Valeur recherchée", key="search_val",
+            placeholder="ex : Canis, Quercus, Parus…"
+        )
 
     if search_val:
         with st.spinner("Recherche…"):
-            df = queries.search_taxons(search_col, search_val, limit=search_limit)
+            df = queries.search_taxons(search_col, search_val, st.session_state.regne_actif)
 
         if df.empty:
             st.warning("Aucun résultat.")
@@ -150,7 +241,6 @@ with tab_detail:
         else:
             row = df.iloc[0]
 
-            # En-tête lisible
             nom_sci  = row.get("LB_NOM", "—")
             nom_vern = row.get("NOM_VERN", "")
             regne    = row.get("REGNE", "")
@@ -163,8 +253,7 @@ with tab_detail:
 
             st.divider()
 
-            # Affichage de toutes les colonnes en deux groupes
-            non_null = {k: v for k, v in row.items() if pd.notna(v) and v != ""}
+            non_null  = {k: v for k, v in row.items() if pd.notna(v) and v != ""}
             null_cols = [k for k, v in row.items() if pd.isna(v) or v == ""]
 
             c1, c2 = st.columns(2)
@@ -187,13 +276,18 @@ with tab_stats:
     st.subheader("Statistiques")
     st.caption("Distribution des taxons par attribut.")
 
+    if st.session_state.regne_actif:
+        st.info(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
+
     STAT_COLS = ["REGNE", "GROUP1_INPN", "GROUP2_INPN", "CLASSE", "ORDRE", "FAMILLE"]
+    if st.session_state.regne_actif:
+        STAT_COLS = [c for c in STAT_COLS if c != "REGNE"]
     available_stat_cols = [c for c in STAT_COLS if c in queries.get_columns()]
 
     stat_col = st.selectbox("Répartition par", available_stat_cols, key="stat_col")
 
     with st.spinner("Calcul…"):
-        df_stat = queries.count_by_column(stat_col)
+        df_stat = queries.count_by_column(stat_col, st.session_state.regne_actif)
 
     st.dataframe(
         df_stat,
