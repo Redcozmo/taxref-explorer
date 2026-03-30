@@ -191,6 +191,8 @@ with tab_search:
         st.info(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
 
     all_cols = queries.get_columns()
+    if st.session_state.regne_actif:
+        all_cols = [c for c in all_cols if c != "REGNE"]
 
     col1, col2 = st.columns([1, 3])
     with col1:
