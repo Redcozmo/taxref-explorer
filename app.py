@@ -230,14 +230,22 @@ with tab_detail:
     st.subheader("Détail d'un taxon")
     st.caption("Affiche toutes les données d'un taxon à partir de son CD_NOM.")
 
-    cd_nom = st.number_input("CD_NOM", min_value=1, step=1, key="detail_cd_nom")
+    cd_nom_list = queries.get_cd_nom_list(st.session_state.regne_actif)
 
-    if st.button("Afficher le taxon", type="primary"):
+    if not cd_nom_list:
+        st.warning("Aucun taxon disponible.")
+    else:
+        cd_nom_actif = st.selectbox(
+            "CD_NOM",
+            options=cd_nom_list,
+            key="detail_cd_nom",
+        )
+
         with st.spinner("Chargement…"):
-            df = queries.get_taxon_by_cd_nom(int(cd_nom))
+            df = queries.get_taxon_by_cd_nom(cd_nom_actif)
 
         if df.empty:
-            st.error(f"Aucun taxon trouvé pour CD_NOM = {cd_nom}")
+            st.error(f"Aucun taxon trouvé pour CD_NOM = {cd_nom_actif}")
         else:
             row = df.iloc[0]
 
