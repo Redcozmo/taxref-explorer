@@ -289,16 +289,27 @@ with tab_stats:
     with st.spinner("Calcul…"):
         df_stat = queries.count_by_column(stat_col, st.session_state.regne_actif)
 
+    if not df_stat.empty:
+        total_stat = df_stat["nb_taxons"].sum()
+        df_stat["pourcentage"] = (df_stat["nb_taxons"] / total_stat * 100).round(2)
+
     st.dataframe(
         df_stat,
         use_container_width=True,
         hide_index=True,
         column_config={
-            "valeur":    st.column_config.TextColumn(stat_col),
-            "nb_taxons": st.column_config.ProgressColumn(
-                "Nb taxons",
+            "valeur":      st.column_config.TextColumn(stat_col),
+            "nb_taxons":   st.column_config.ProgressColumn(
+                "Nombre de taxons par groupe",
+                format="%d",
                 min_value=0,
                 max_value=int(df_stat["nb_taxons"].max()) if not df_stat.empty else 1,
+            ),
+            "pourcentage": st.column_config.NumberColumn(
+                "Répartition par groupe (en %)",
+                format="%.2f %%",
+                min_value=0,
+                max_value=100,
             ),
         },
         height=500,
