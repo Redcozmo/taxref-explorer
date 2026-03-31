@@ -190,9 +190,9 @@ with tab_search:
     if st.session_state.regne_actif:
         st.info(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
 
-    all_cols = queries.get_columns()
+    SEARCH_COLS = ["FAMILLE", "LB_NOM", "NOM_VERN", "NOM_VERN_ENG", "LB_AUTEUR"]
     if st.session_state.regne_actif:
-        all_cols = [c for c in all_cols if c != "REGNE"]
+        all_cols = [c for c in SEARCH_COLS if c != "REGNE"]
 
     col1, col2 = st.columns([1, 3])
     with col1:
