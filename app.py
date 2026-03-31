@@ -257,53 +257,55 @@ with tab_detail:
     st.subheader("Détail d'un taxon")
     st.caption("Affiche toutes les données d'un taxon à partir de son CD_NOM.")
 
-    cd_nom_list = queries.get_cd_nom_list(st.session_state.regne_actif)
+    sample_cd_noms = queries.get_sample_values("CD_NOM", st.session_state.regne_actif, n=5)
+    placeholder = "ex : " + ", ".join(str(int(v)) for v in sample_cd_noms) if sample_cd_noms else "ex : 1234"
 
-    if not cd_nom_list:
-        st.warning("Aucun taxon disponible.")
-    else:
-        cd_nom_actif = st.selectbox(
-            "CD_NOM",
-            options=cd_nom_list,
-            key="detail_cd_nom",
-        )
+    cd_nom_saisi = st.text_input("CD_NOM", placeholder=placeholder, key="detail_cd_nom")
 
-        with st.spinner("Chargement…"):
-            df = queries.get_taxon_by_cd_nom(cd_nom_actif)
+    if cd_nom_saisi:
+        try:
+            cd_nom_actif = int(cd_nom_saisi)
+        except ValueError:
+            st.error("Veuillez saisir un nombre entier.")
+            cd_nom_actif = None
 
-        if df.empty:
-            st.error(f"Aucun taxon trouvé pour CD_NOM = {cd_nom_actif}")
-        else:
-            row = df.iloc[0]
+        if cd_nom_actif:
+            with st.spinner("Chargement…"):
+                df = queries.get_taxon_by_cd_nom(cd_nom_actif)
 
-            nom_sci  = row.get("LB_NOM", "—")
-            nom_vern = row.get("NOM_VERN", "")
-            regne    = row.get("REGNE", "")
+            if df.empty:
+                st.error(f"Aucun taxon trouvé pour CD_NOM = {cd_nom_actif}")
+            else:
+                row = df.iloc[0]
 
-            st.markdown(f"### *{nom_sci}*")
-            if nom_vern:
-                st.markdown(f"**Nom vernaculaire :** {nom_vern}")
-            if regne:
-                st.markdown(f"**Règne :** {regne}")
+                nom_sci  = row.get("LB_NOM", "—")
+                nom_vern = row.get("NOM_VERN", "")
+                regne    = row.get("REGNE", "")
 
-            st.divider()
+                st.markdown(f"### *{nom_sci}*")
+                if nom_vern:
+                    st.markdown(f"**Nom vernaculaire :** {nom_vern}")
+                if regne:
+                    st.markdown(f"**Règne :** {regne}")
 
-            non_null  = {k: v for k, v in row.items() if pd.notna(v) and v != ""}
-            null_cols = [k for k, v in row.items() if pd.isna(v) or v == ""]
+                st.divider()
 
-            c1, c2 = st.columns(2)
-            items = list(non_null.items())
-            mid   = (len(items) + 1) // 2
+                non_null  = {k: v for k, v in row.items() if pd.notna(v) and v != ""}
+                null_cols = [k for k, v in row.items() if pd.isna(v) or v == ""]
 
-            with c1:
-                for k, v in items[:mid]:
-                    st.markdown(f"**{k}** : {v}")
-            with c2:
-                for k, v in items[mid:]:
-                    st.markdown(f"**{k}** : {v}")
+                c1, c2 = st.columns(2)
+                items = list(non_null.items())
+                mid   = (len(items) + 1) // 2
 
-            with st.expander(f"Colonnes vides ({len(null_cols)})"):
-                st.write(", ".join(null_cols))
+                with c1:
+                    for k, v in items[:mid]:
+                        st.markdown(f"**{k}** : {v}")
+                with c2:
+                    for k, v in items[mid:]:
+                        st.markdown(f"**{k}** : {v}")
+
+                with st.expander(f"Colonnes vides ({len(null_cols)})"):
+                    st.write(", ".join(null_cols))
 
 
 # ── TAB 4 : STATISTIQUES ───────────────────────────────────────────────────
