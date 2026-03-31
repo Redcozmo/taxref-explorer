@@ -91,14 +91,14 @@ with tab_profil:
     if regnes:
         # Grille de boutons — un par règne
         EMOJIS = {
-            "Animalia":  "🐾",
-            "Plantae":   "🌿",
-            "Fungi":     "🍄",
+            "Animalia": "🐾",
+            "Plantae": "🌿",
+            "Fungi": "🍄",
             "Chromista": "🔬",
-            "Bacteria":  "🦠",
-            "Archaea":   "🧬",
-            "Protozoa":  "🔬",
-            "Viruses":   "🧫",
+            "Bacteria": "🦠",
+            "Archaea": "🧬",
+            "Protozoa": "🔬",
+            "Orthornavirae": "🧫",
         }
 
         st.markdown("#### Choisir un règne")
@@ -226,16 +226,17 @@ with tab_search:
             key="search_col",
         )
     with col2:
-        samples = queries.get_sample_values(search_col, st.session_state.regne_actif)
-        placeholder = "ex : " + ", ".join(str(v) for v in samples) if samples else "Valeur recherchée"
-        search_val = st.text_input(
-            "Valeur recherchée", key="search_val",
-            placeholder=placeholder,
+        distinct_values = queries.get_distinct_values(search_col, st.session_state.regne_actif)
+        search_val = st.selectbox(
+            "Valeur",
+            options=[None] + distinct_values,
+            format_func=lambda x: "" if x is None else str(x),
+            key="search_val",
         )
 
     if search_val:
         with st.spinner("Recherche…"):
-            df = queries.search_taxons(search_col, search_val, st.session_state.regne_actif)
+            df = queries.search_taxons(search_col, str(search_val), st.session_state.regne_actif)
 
         if df.empty:
             st.warning("Aucun résultat.")
@@ -249,7 +250,7 @@ with tab_search:
                 "text/csv",
             )
     else:
-        st.info("Saisis une valeur pour lancer la recherche.")
+        st.info("Sélectionne une valeur pour lancer la recherche.")
 
 
 # ── TAB 3 : DÉTAIL TAXON ───────────────────────────────────────────────────
