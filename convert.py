@@ -40,15 +40,24 @@ def convert(input_path: str, output_dir: str = "data") -> None:
     df = pd.read_csv(
         input_path,
         sep="\t",
-        dtype=str,          # tout en str pour éviter les erreurs de parsing
+        dtype=str,
         low_memory=False,
         encoding="utf-8",
+        encoding_errors="replace",  # remplace les octets invalides par ?
     )
     print(f"   {len(df):,} lignes · {len(df.columns)} colonnes ({time.time()-t0:.1f}s)")
 
     # --- 2. Nettoyage minimal ---
-    df.columns = [c.strip().upper() for c in df.columns]   # noms de colonnes en majuscules
-    df = df.where(df != "", other=None)                     # chaînes vides → None/NaN
+    df.columns = [c.strip().upper() for c in df.columns]
+    df = df.where(df != "", other=None)
+
+    # Nettoyage des caractères invalides dans les colonnes textuelles
+    print("🧹 Nettoyage des caractères invalides...")
+    for col in df.select_dtypes(include="object").columns:
+        df[col] = df[col].apply(
+            lambda x: x.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+            if isinstance(x, str) else x
+        )
 
     # --- 3. Typage optimisé ---
     print("🔧 Optimisation des types ...")
