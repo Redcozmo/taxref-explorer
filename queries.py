@@ -37,6 +37,30 @@ def get_columns() -> list[str]:
 
 
 @st.cache_data(ttl=3600)
+def get_sample_values(column: str, regne: str = None, n: int = 5) -> list:
+    """Retourne les n premières valeurs non nulles d'une colonne (pour le placeholder)."""
+    try:
+        where, params = _where_regne(regne)
+        df = get_con().execute(
+            f'SELECT DISTINCT "{column}" FROM taxon '
+            f'WHERE "{column}" IS NOT NULL AND {where} '
+            f'ORDER BY "{column}" LIMIT {n}',
+            params
+        ).df()
+        # Filtrer les valeurs avec des caractères invalides
+        values = []
+        for v in df[column].tolist():
+            try:
+                str(v).encode("utf-8").decode("utf-8")
+                values.append(v)
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
+        return values
+    except Exception:
+        return []
+
+
+@st.cache_data(ttl=3600)
 def get_distinct_values(column: str, regne: str = None) -> list:
     """Valeurs distinctes non nulles d'une colonne, filtrées par règne."""
     where, params = _where_regne(regne)

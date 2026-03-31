@@ -192,20 +192,24 @@ with tab_search:
 
     SEARCH_COLS = ["FAMILLE", "LB_NOM", "NOM_VERN", "NOM_VERN_ENG", "LB_AUTEUR"]
     if st.session_state.regne_actif:
-        all_cols = [c for c in SEARCH_COLS if c != "REGNE"]
+        SEARCH_COLS = [c for c in SEARCH_COLS if c != "REGNE"]
+
+    available_cols = [c for c in SEARCH_COLS if c in queries.get_columns()]
 
     col1, col2 = st.columns([1, 3])
     with col1:
         search_col = st.selectbox(
             "Attribut",
-            all_cols,
-            index=all_cols.index("LB_NOM") if "LB_NOM" in all_cols else 0,
+            available_cols,
+            index=available_cols.index("LB_NOM") if "LB_NOM" in available_cols else 0,
             key="search_col",
         )
     with col2:
+        samples = queries.get_sample_values(search_col, st.session_state.regne_actif)
+        placeholder = "ex : " + ", ".join(str(v) for v in samples) if samples else "Valeur recherchée"
         search_val = st.text_input(
             "Valeur recherchée", key="search_val",
-            placeholder="ex : Canis, Quercus, Parus…"
+            placeholder=placeholder,
         )
 
     if search_val:
