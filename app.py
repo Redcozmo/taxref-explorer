@@ -164,13 +164,34 @@ with tab_filter:
             if choice != "(tous)":
                 filters[col] = choice
 
-    limit = st.slider("Nombre max de résultats", 50, 2000, 500, 50, key="filter_limit")
+    if "filter_no_limit" not in st.session_state:
+        st.session_state.filter_no_limit = False
+
+    col_slider, col_btn = st.columns([4, 1])
+    with col_slider:
+        limit = st.slider(
+            "Nombre max de résultats", 50, 2000, 500, 50,
+            key="filter_limit",
+            disabled=st.session_state.filter_no_limit,
+        )
+    with col_btn:
+        st.write("")
+        btn_label = "Remettre la limite" if st.session_state.filter_no_limit else "Supprimer la limite"
+        if st.button(btn_label, use_container_width=True, key="filter_toggle_limit"):
+            st.session_state.filter_no_limit = not st.session_state.filter_no_limit
+            st.rerun()
+
+    active_limit = None if st.session_state.filter_no_limit else limit
 
     if filters:
         with st.spinner("Requête en cours…"):
-            df = queries.filter_taxons(filters, st.session_state.regne_actif, limit=limit)
+            df = queries.filter_taxons(filters, st.session_state.regne_actif, limit=active_limit)
 
-        st.success(f"{len(df):,} taxon(s) trouvé(s)")
+        if st.session_state.filter_no_limit:
+            st.success(f"{len(df):,} taxon(s) trouvé(s) — sans limite")
+        else:
+            st.success(f"{len(df):,} taxon(s) trouvé(s) — limité à {limit}")
+
         st.dataframe(df, use_container_width=True, hide_index=True, height=420)
         st.download_button(
             "⬇️ Télécharger CSV",
