@@ -44,7 +44,7 @@ with st.sidebar:
     # Affichage du règne actif
     if st.session_state.regne_actif:
         st.success(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
-        if st.button("✖ Réinitialiser le profil", use_container_width=True):
+        if st.button("✖ Réinitialiser le profil", width='stretch'):
             st.session_state.regne_actif = None
             st.cache_data.clear()
             st.rerun()
@@ -111,7 +111,7 @@ with tab_profil:
                 if st.button(
                     label,
                     key=f"profil_{regne}",
-                    use_container_width=True,
+                    width='stretch',
                     type="primary" if actif else "secondary",
                 ):
                     if actif:
@@ -177,7 +177,7 @@ with tab_filter:
     with col_btn:
         st.write("")
         btn_label = "Remettre la limite" if st.session_state.filter_no_limit else "Supprimer la limite"
-        if st.button(btn_label, use_container_width=True, key="filter_toggle_limit"):
+        if st.button(btn_label, width='stretch', key="filter_toggle_limit"):
             st.session_state.filter_no_limit = not st.session_state.filter_no_limit
             st.rerun()
 
@@ -192,7 +192,7 @@ with tab_filter:
         else:
             st.success(f"{len(df):,} taxon(s) trouvé(s) — limité à {limit}")
 
-        st.dataframe(df, use_container_width=True, hide_index=True, height=420)
+        st.dataframe(df, width='stretch', hide_index=True, height=420)
         st.download_button(
             "⬇️ Télécharger CSV",
             df.to_csv(index=False).encode("utf-8"),
@@ -242,7 +242,7 @@ with tab_search:
             st.warning("Aucun résultat.")
         else:
             st.success(f"{len(df):,} résultat(s)")
-            st.dataframe(df, use_container_width=True, hide_index=True, height=420)
+            st.dataframe(df, width='stretch', hide_index=True, height=420)
             st.download_button(
                 "⬇️ Télécharger CSV",
                 df.to_csv(index=False).encode("utf-8"),
@@ -333,7 +333,7 @@ with tab_stats:
 
     st.dataframe(
         df_stat,
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         column_config={
             "valeur":      st.column_config.TextColumn(stat_col),
