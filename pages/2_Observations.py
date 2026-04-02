@@ -28,6 +28,10 @@ except ImportError:
 with st.sidebar:
     st.title("📍 Observations")
     st.caption("Visualisation des données d'observation ponctuelles")
+    st.divider()
+
+    if st.button("← Retour à l'accueil", use_container_width=True):
+        st.switch_page("app.py")
 
     st.divider()
 
@@ -47,11 +51,6 @@ with st.sidebar:
                 f.write(uploaded.read())
             gpkg_path = tmp_path
             st.success(f"Fichier chargé : `{uploaded.name}`")
-
-    st.divider()
-
-    if st.button("← Retour à l'accueil", width='stretch'):
-        st.switch_page("app.py")
 
 # ---------------------------------------------------------------------------
 # Corps principal
@@ -122,34 +121,57 @@ if gdf.empty:
 centre = [gdf["lat"].mean(), gdf["lon"].mean()]
 m = folium.Map(location=centre, zoom_start=8, tiles="CartoDB positron")
 
-# Ajout des points
-for _, row in gdf.iterrows():
-    # Popup avec tous les attributs non nuls
-    attrs = {
-        k: v for k, v in row.items()
-        if k not in ("geometry", "lat", "lon") and v is not None
-    }
-    popup_html = "<br>".join(f"<b>{k}</b> : {v}" for k, v in attrs.items())
+# Colonnes à inclure dans le popup (hors géométrie)
+popup_cols = [c for c in gdf.columns if c not in ("geometry", "lat", "lon")]
 
-    folium.CircleMarker(
-        location=[row["lat"], row["lon"]],
+# Préparation du GeoJSON avec propriétés pour le popup
+geojson_data = gdf[popup_cols + ["geometry"]].to_json()
+
+# Style des points
+style = {
+    "radius": point_radius,
+    "color": point_color,
+    "fillColor": point_color,
+    "fillOpacity": 0.7,
+    "weight": 1,
+}
+
+# Popup dynamique généré côté JS — bien plus rapide que Python
+popup_fields = popup_cols[:8]  # limiter à 8 champs pour la lisibilité
+popup_aliases = [f"<b>{c}</b>" for c in popup_fields]
+
+folium.GeoJson(
+    geojson_data,
+    name="Observations",
+    marker=folium.CircleMarker(
         radius=point_radius,
         color=point_color,
         fill=True,
         fill_color=point_color,
         fill_opacity=0.7,
-        popup=folium.Popup(popup_html, max_width=300),
-        tooltip=str(attrs.get(filter_cols[0], "")) if filter_cols else "",
-    ).add_to(m)
+        weight=1,
+    ),
+    popup=folium.GeoJsonPopup(
+        fields=popup_fields,
+        aliases=popup_aliases,
+        localize=True,
+        max_width=300,
+    ),
+    tooltip=folium.GeoJsonTooltip(
+        fields=[popup_fields[0]] if popup_fields else [],
+        aliases=[""],
+        localize=True,
+    ),
+).add_to(m)
 
-st_folium(m, width='stretch', height=600)
+st_folium(m, use_container_width=True, height=600)
 
 # ---------------------------------------------------------------------------
 # Tableau des données
 # ---------------------------------------------------------------------------
 with st.expander(f"📋 Données brutes ({len(gdf):,} observations)"):
     display_cols = [c for c in gdf.columns if c != "geometry"]
-    st.dataframe(gdf[display_cols], width='stretch', hide_index=True)
+    st.dataframe(gdf[display_cols], use_container_width=True, hide_index=True)
     st.download_button(
         "⬇️ Télécharger CSV",
         gdf[display_cols].to_csv(index=False).encode("utf-8"),
