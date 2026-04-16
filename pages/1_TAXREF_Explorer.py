@@ -44,7 +44,7 @@ with st.sidebar:
     # Affichage du règne actif
     if st.session_state.regne_actif:
         st.success(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
-        if st.button("✖ Réinitialiser le profil", width='stretch'):
+        if st.button("✖ Réinitialiser le profil", use_container_width=True):
             st.session_state.regne_actif = None
             st.cache_data.clear()
             st.rerun()
@@ -53,7 +53,7 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("← Retour à l'accueil", width='stretch'):
+    if st.button("← Retour à l'accueil", use_container_width=True):
         st.switch_page("app.py")
 
 # ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ with tab_filter:
     with col_btn:
         st.write("")
         btn_label = "Remettre la limite" if st.session_state.filter_no_limit else "Supprimer la limite"
-        if st.button(btn_label, width='stretch', key="filter_toggle_limit"):
+        if st.button(btn_label, use_container_width=True, key="filter_toggle_limit"):
             st.session_state.filter_no_limit = not st.session_state.filter_no_limit
             st.rerun()
 
