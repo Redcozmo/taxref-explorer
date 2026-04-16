@@ -106,7 +106,7 @@ with tab_profil:
                 if st.button(
                     label,
                     key=f"profil_{regne}",
-                    width='stretch',
+                    use_container_width=True,
                     type="primary" if actif else "secondary",
                 ):
                     if actif:
@@ -187,7 +187,7 @@ with tab_filter:
         else:
             st.success(f"{len(df):,} taxon(s) trouvé(s) — limité à {limit}")
 
-        st.dataframe(df, width='stretch', hide_index=True, height=420)
+        st.dataframe(df, use_container_width=True, hide_index=True, height=420)
         st.download_button(
             "⬇️ Télécharger CSV",
             df.to_csv(index=False).encode("utf-8"),
@@ -237,7 +237,7 @@ with tab_search:
             st.warning("Aucun résultat.")
         else:
             st.success(f"{len(df):,} résultat(s)")
-            st.dataframe(df, width='stretch', hide_index=True, height=420)
+            st.dataframe(df, use_container_width=True, hide_index=True, height=420)
             st.download_button(
                 "⬇️ Télécharger CSV",
                 df.to_csv(index=False).encode("utf-8"),
@@ -328,7 +328,7 @@ with tab_stats:
 
     st.dataframe(
         df_stat,
-        width='stretch',
+        use_container_width=True,
         hide_index=True,
         column_config={
             "valeur":      st.column_config.TextColumn(stat_col),
