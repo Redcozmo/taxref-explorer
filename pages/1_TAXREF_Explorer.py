@@ -137,23 +137,26 @@ with tab_profil:
 
 # ── TAB 1 : FILTRER ────────────────────────────────────────────────────────
 with tab_filter:
-    st.subheader("Filtrer par attribut")
-    st.caption("Sélectionne une ou plusieurs valeurs pour filtrer les taxons.")
-
     if st.session_state.regne_actif:
         st.info(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
 
-    # REGNE exclu des filtres si un profil est actif (déjà filtré)
-    FILTER_COLS = ["REGNE", "PHYLUM", "CLASSE", "ORDRE", "FAMILLE", "GROUP1_INPN", "GROUP2_INPN"]
+    # Définir les filtres par catégories
+    TAXONOMIC_FILTERS = ["RÈGNE", "PHYLUM", "CLASSE", "ORDRE", "FAMILLE"]
+    INPN_FILTERS = ["GROUP1_INPN", "GROUP2_INPN"]
+    
     if st.session_state.regne_actif:
-        FILTER_COLS = [c for c in FILTER_COLS if c != "REGNE"]
-
-    available_cols = [c for c in FILTER_COLS if c in queries.get_columns()]
-
-    cols = st.columns(3)
+        TAXONOMIC_FILTERS = [c for c in TAXONOMIC_FILTERS if c != "RÈGNE"]
+    
+    available_taxonomic = [c for c in TAXONOMIC_FILTERS if c in queries.get_columns()]
+    available_inpn = [c for c in INPN_FILTERS if c in queries.get_columns()]
+    
     filters = {}
-    for i, col in enumerate(available_cols):
-        with cols[i % 3]:
+    
+    st.markdown("#### 📚 Filtrer par la taxonomie linnéenne")
+    cols = st.columns(len(available_taxonomic))
+    filters = {}
+    for i, col in enumerate(available_taxonomic):
+        with cols[i]:
             # Obtenir les options: d'abord tous les filtres existants, puis les valeurs distinctes
             options = ["(tous)"] + queries.get_distinct_values_with_filters(
                 col, 
@@ -167,6 +170,26 @@ with tab_filter:
             )
             if choice != "(tous)":
                 filters[col] = choice
+        
+    st.markdown("#### 🏷️ Filtrer par les regroupements vernaculaires INPN (niveaux 1 et 2)")
+    cols_inpn = st.columns(len(available_inpn))
+    for i, col in enumerate(available_inpn):
+        with cols_inpn[i]:
+            # Obtenir les options: d'abord tous les filtres existants, puis les valeurs distinctes
+            options = ["(tous)"] + queries.get_distinct_values_with_filters(
+                col, 
+                filters, 
+                st.session_state.regne_actif
+            )
+            choice = st.selectbox(
+                col.capitalize(), 
+                options, 
+                key=f"filter_{col}"
+            )
+            if choice != "(tous)":
+                filters[col] = choice
+    
+    st.divider()
 
     if "filter_no_limit" not in st.session_state:
         st.session_state.filter_no_limit = False
