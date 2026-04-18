@@ -16,15 +16,10 @@ Application Streamlit pour explorer la base TAXREF (référentiel national des t
 ### 1. Cloner / télécharger le projet
 
 ```bash
-cd taxref_explorer
+git clone https://github.com/Redcozmo/taxref-explorer.git
+cd taxref-explorer
 ```
 
-### 2. Créer un environnement virtuel (recommandé)
-
-```bash
-python -m venv .venv
-source .venv/bin/activate        # Linux / macOS
-.venv\Scripts\activate           # Windows
 ```
 
 ### 3. Installer les dépendances
@@ -37,9 +32,9 @@ pip install -r requirements.txt
 
 ## Conversion de la base TAXREF
 
-Télécharger le fichier TAXREF depuis [INPN](https://inpn.mnhn.fr/telechargement/referentielEspece/taxref)
+Télécharger le fichier TAXREF depuis [INPN](https://inpn.mnhn.fr/telechargement/referentielEspece/taxref) ou la page [temporaire](https://www.patrinat.fr/fr/page-temporaire-de-telechargement-des-referentiels-de-donnees-lies-linpn-7353) 
 
-Puis lancer la conversion :
+Puis lancer la conversion du fichier texte en parquet et duckdb :
 
 ```bash
 python convert.py --input input_data/TAXREFv18.txt
@@ -49,7 +44,6 @@ Cela génère dans le dossier `data/` :
 - `taxref.parquet` — fichier Parquet compressé (~10–20 Mo)
 - `taxref.duckdb`  — base DuckDB avec index (~15–25 Mo)
 
-> La conversion prend ~30 secondes pour ~300 000 taxons.
 
 ---
 
