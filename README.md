@@ -13,16 +13,14 @@ Application Streamlit pour explorer la base TAXREF (référentiel national des t
 
 ## Installation
 
-### 1. Cloner / télécharger le projet
+### Cloner / télécharger le projet
 
 ```bash
 git clone https://github.com/Redcozmo/taxref-explorer.git
 cd taxref-explorer
 ```
 
-```
-
-### 3. Installer les dépendances
+### Installer les dépendances
 
 ```bash
 pip install -r requirements.txt
