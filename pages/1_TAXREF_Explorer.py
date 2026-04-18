@@ -138,7 +138,7 @@ with tab_profil:
 # ── TAB 1 : FILTRER ────────────────────────────────────────────────────────
 with tab_filter:
     if st.session_state.active_reign:
-        st.info(f"🔬 Profil actif : **{st.session_state.active_reign}**")
+        st.success(f"🔬 Profil actif : **{st.session_state.active_reign}**")
 
     # Définir les filtres par catégories
     TAXONOMIC_FILTERS = ["RÈGNE", "PHYLUM", "CLASSE", "ORDRE", "FAMILLE"]
@@ -264,11 +264,11 @@ with tab_filter:
 
 # ── TAB 2 : RECHERCHER ─────────────────────────────────────────────────────
 with tab_search:
+    if st.session_state.active_reign:
+        st.success(f"🔬 Profil actif : **{st.session_state.active_reign}**")
+
     st.subheader("Recherche dans un attribut")
     st.caption("Recherche partielle, insensible à la casse.")
-
-    if st.session_state.active_reign:
-        st.info(f"🔬 Profil actif : **{st.session_state.active_reign}**")
 
     SEARCH_COLS = ["FAMILLE", "LB_NOM", "NOM_VERN", "NOM_VERN_ENG", "LB_AUTEUR"]
     if st.session_state.active_reign:
@@ -314,6 +314,9 @@ with tab_search:
 
 # ── TAB 3 : DÉTAIL TAXON ───────────────────────────────────────────────────
 with tab_detail:
+    if st.session_state.active_reign:
+        st.success(f"🔬 Profil actif : **{st.session_state.active_reign}**")
+
     st.subheader("Détail d'un taxon")
     st.caption("Affiche toutes les données d'un taxon à partir de son CD_NOM.")
 
@@ -370,11 +373,11 @@ with tab_detail:
 
 # ── TAB 4 : STATISTIQUES ───────────────────────────────────────────────────
 with tab_stats:
+    if st.session_state.active_reign:
+        st.success(f"🔬 Profil actif : **{st.session_state.active_reign}**")
+
     st.subheader("Statistiques")
     st.caption("Distribution des taxons par attribut.")
-
-    if st.session_state.active_reign:
-        st.info(f"🔬 Profil actif : **{st.session_state.active_reign}**")
 
     STAT_COLS = ["REGNE", "PHYLUM", "GROUP1_INPN", "GROUP2_INPN", "CLASSE", "ORDRE", "FAMILLE"]
     if st.session_state.active_reign:
