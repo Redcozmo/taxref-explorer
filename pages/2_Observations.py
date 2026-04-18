@@ -165,41 +165,98 @@ with col_filters:
 with col_map:
     centre = [gdf_filtered["lat"].mean(), gdf_filtered["lon"].mean()]
     m = folium.Map(location=centre, zoom_start=8, tiles="CartoDB positron")
-
+    
     # Colonnes à inclure dans le popup (hors géométrie)
     popup_cols = [c for c in gdf_filtered.columns if c not in ("geometry", "lat", "lon")]
-
-    # Préparation du GeoJSON avec propriétés pour le popup
-    geojson_data = gdf_filtered[popup_cols + ["geometry"]].to_json()
-
-    # Popup dynamique généré côté JS — bien plus rapide que Python
     popup_fields = popup_cols[:8]  # limiter à 8 champs pour la lisibilité
-    popup_aliases = [f"<b>{c}</b>" for c in popup_fields]
-
-    folium.GeoJson(
-        geojson_data,
-        name="Observations",
-        marker=folium.CircleMarker(
-            radius=point_radius,
-            color=point_color,
-            fill=True,
-            fill_color=point_color,
-            fill_opacity=0.7,
-            weight=1,
-        ),
-        popup=folium.GeoJsonPopup(
-            fields=popup_fields,
-            aliases=popup_aliases,
-            localize=True,
-            max_width=300,
-        ),
-        tooltip=folium.GeoJsonTooltip(
-            fields=[popup_fields[0]] if popup_fields else [],
-            aliases=[""],
-            localize=True,
-        ),
-    ).add_to(m)
-
+    
+    # Palette de couleurs pour les valeurs de l'attribut filtré
+    COLOR_PALETTE = [
+        "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8",
+        "#F7DC6F", "#BB8FCE", "#85C1E2", "#F8B88B", "#A9E5AC",
+        "#FFB347", "#87CEEB", "#DDA0DD", "#F0E68C", "#B0E0E6"
+    ]
+    
+    # Créer un mapping couleur pour les valeurs de l'attribut sélectionné
+    color_map = {}
+    if filter_cols and "filter_attribute" in st.session_state and "filter_values" in st.session_state:
+        selected_attr = st.session_state.filter_attribute
+        selected_vals = st.session_state.filter_values
+        
+        if selected_vals:
+            for i, val in enumerate(selected_vals):
+                color_map[val] = COLOR_PALETTE[i % len(COLOR_PALETTE)]
+            
+            # Ajouter une colonne de couleur au GeoDataFrame
+            gdf_filtered["_color"] = gdf_filtered[selected_attr].map(color_map).fillna("#808080")
+            
+            # Créer des features individuels colorés
+            for idx, row in gdf_filtered.iterrows():
+                folium.CircleMarker(
+                    location=[row["lat"], row["lon"]],
+                    radius=point_radius,
+                    color=row["_color"],
+                    fill=True,
+                    fill_color=row["_color"],
+                    fill_opacity=0.7,
+                    weight=1,
+                    popup=folium.Popup(
+                        "<br>".join([f"<b>{col}</b>: {row[col]}" for col in popup_fields[:5]]),
+                        max_width=300
+                    ),
+                    tooltip=str(row[popup_fields[0]] if popup_fields else "")
+                ).add_to(m)
+            
+            # Ajouter une légende
+            legend_html = '''
+            <div style="position: fixed; 
+                     bottom: 50px; right: 50px; width: 250px; height: auto;
+                     background-color: white; border:2px solid grey; z-index:9999; 
+                     font-size:14px; padding: 10px">
+                <p style="margin:5px; font-weight: bold;">Légende</p>
+                <p style="margin:5px; font-size: 12px; color: #666;"><i>''' + selected_attr + '''</i></p>
+            '''
+            for val, color in color_map.items():
+                legend_html += f'''<p style="margin:5px;"><span style="background-color: {color}; 
+                    padding: 3px 8px; border-radius: 3px; color: white; font-size: 12px;"></span> {val}</p>'''
+            legend_html += '</div>'
+            
+            m.get_root().html.add_child(folium.Element(legend_html))
+        else:
+            # Si aucune valeur sélectionnée, afficher tous les points avec la couleur par défaut
+            for idx, row in gdf_filtered.iterrows():
+                folium.CircleMarker(
+                    location=[row["lat"], row["lon"]],
+                    radius=point_radius,
+                    color=point_color,
+                    fill=True,
+                    fill_color=point_color,
+                    fill_opacity=0.7,
+                    weight=1,
+                    popup=folium.Popup(
+                        "<br>".join([f"<b>{col}</b>: {row[col]}" for col in popup_fields[:5]]),
+                        max_width=300
+                    ),
+                    tooltip=str(row[popup_fields[0]] if popup_fields else "")
+                ).add_to(m)
+    else:
+        # Fallback : afficher avec les couleurs par défaut
+        for idx, row in gdf_filtered.iterrows():
+            folium.CircleMarker(
+                location=[row["lat"], row["lon"]],
+                radius=point_radius,
+                color=point_color,
+                fill=True,
+                fill_color=point_color,
+                fill_opacity=0.7,
+                weight=1,
+                popup=folium.Popup(
+                    "<br>".join([f"<b>{col}</b>: {row[col]}" for col in popup_fields[:5]]),
+                    max_width=300
+                ),
+                tooltip=str(row[popup_fields[0]] if popup_fields else "")
+            ).add_to(m)
+    
     st_folium(m, use_container_width=True, height=600)
 
 # ---------------------------------------------------------------------------
