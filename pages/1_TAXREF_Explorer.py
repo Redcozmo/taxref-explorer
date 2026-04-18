@@ -154,8 +154,17 @@ with tab_filter:
     filters = {}
     for i, col in enumerate(available_cols):
         with cols[i % 3]:
-            options = ["(tous)"] + queries.get_distinct_values(col, st.session_state.regne_actif)
-            choice = st.selectbox(col.capitalize(), options, key=f"filter_{col}")
+            # Obtenir les options: d'abord tous les filtres existants, puis les valeurs distinctes
+            options = ["(tous)"] + queries.get_distinct_values_with_filters(
+                col, 
+                filters, 
+                st.session_state.regne_actif
+            )
+            choice = st.selectbox(
+                col.capitalize(), 
+                options, 
+                key=f"filter_{col}"
+            )
             if choice != "(tous)":
                 filters[col] = choice
 
@@ -312,7 +321,7 @@ with tab_stats:
     if st.session_state.regne_actif:
         st.info(f"🔬 Profil actif : **{st.session_state.regne_actif}**")
 
-    STAT_COLS = ["REGNE", "GROUP1_INPN", "GROUP2_INPN", "CLASSE", "ORDRE", "FAMILLE"]
+    STAT_COLS = ["REGNE", "PHYLUM", "GROUP1_INPN", "GROUP2_INPN", "CLASSE", "ORDRE", "FAMILLE"]
     if st.session_state.regne_actif:
         STAT_COLS = [c for c in STAT_COLS if c != "REGNE"]
     available_stat_cols = [c for c in STAT_COLS if c in queries.get_columns()]

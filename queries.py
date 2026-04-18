@@ -73,6 +73,24 @@ def get_distinct_values(column: str, regne: str = None) -> list:
     return df[column].tolist()
 
 
+@st.cache_data(ttl=3600)
+def get_distinct_values_with_filters(column: str, filters: dict, regne: str = None) -> list:
+    """Valeurs distinctes non nulles d'une colonne, filtrées par règne ET autres colonnes."""
+    where_regne, params = _where_regne(regne)
+    
+    # Construire la clause WHERE pour les autres filtres
+    where_filters = " AND ".join(f'"{k}" = ?' for k in filters) if filters else "1=1"
+    params_filters = list(filters.values()) if filters else []
+    
+    df = get_con().execute(
+        f'SELECT DISTINCT "{column}" FROM taxon '
+        f'WHERE "{column}" IS NOT NULL AND {where_regne} AND {where_filters} '
+        f'ORDER BY "{column}"',
+        params + params_filters
+    ).df()
+    return df[column].tolist()
+
+
 @st.cache_data(ttl=600)
 def filter_taxons(filters: dict, regne: str = None, limit: int = LIMIT_DEFAULT) -> pd.DataFrame:
     """Filtre les taxons sur plusieurs colonnes (égalité stricte)."""
