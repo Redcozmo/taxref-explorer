@@ -150,44 +150,76 @@ with tab_filter:
     available_taxonomic = [c for c in TAXONOMIC_FILTERS if c in queries.get_columns()]
     available_inpn = [c for c in INPN_FILTERS if c in queries.get_columns()]
     
-    filters = {}
+    # Dictionnaire pour les filtres taxonomiques (en cascade entre eux)
+    taxonomic_filters = {}
     
     st.markdown("#### 📚 Filtrer par la taxonomie linnéenne")
     cols = st.columns(len(available_taxonomic))
-    filters = {}
+    
+    def reset_inpn_filters():
+        """Réinitialiser les filtres INPN quand un filtre taxonomique change"""
+        for col in available_inpn:
+            st.session_state[f"filter_{col}"] = "(tous)"
+    
     for i, col in enumerate(available_taxonomic):
         with cols[i]:
-            # Obtenir les options: d'abord tous les filtres existants, puis les valeurs distinctes
+            # Les filtres taxonomiques s'influencent entre eux (cascade)
             options = ["(tous)"] + queries.get_distinct_values_with_filters(
                 col, 
-                filters, 
+                taxonomic_filters,  # Cascade uniquement entre filtres taxonomiques
                 st.session_state.active_reign
             )
             choice = st.selectbox(
                 col.capitalize(), 
                 options, 
-                key=f"filter_{col}"
+                key=f"filter_{col}",
+                on_change=reset_inpn_filters
             )
             if choice != "(tous)":
-                filters[col] = choice
+                taxonomic_filters[col] = choice
         
     st.markdown("#### 🏷️ Filtrer par les regroupements vernaculaires INPN (niveaux 1 et 2)")
     cols_inpn = st.columns(len(available_inpn))
+    inpn_filters = {}
+    
+    def reset_taxonomic_filters():
+        """Réinitialiser les filtres taxonomiques quand un filtre INPN change"""
+        for col in available_taxonomic:
+            st.session_state[f"filter_{col}"] = "(tous)"
+    
     for i, col in enumerate(available_inpn):
         with cols_inpn[i]:
-            # Obtenir les options: d'abord tous les filtres existants, puis les valeurs distinctes
+            # Les filtres INPN sont en cascade entre eux, mais indépendants des filtres taxonomiques
             options = ["(tous)"] + queries.get_distinct_values_with_filters(
                 col, 
-                filters, 
+                inpn_filters,  # Cascade uniquement entre filtres INPN
                 st.session_state.active_reign
             )
             choice = st.selectbox(
                 col.capitalize(), 
                 options, 
-                key=f"filter_{col}"
+                key=f"filter_{col}",
+                on_change=reset_taxonomic_filters
             )
             if choice != "(tous)":
-                filters[col] = choice
+                inpn_filters[col] = choice
+    
+    # Relire les valeurs taxonomiques du session_state pour vérifier si INPN a été changé
+    taxonomic_filters = {}
+    for col in available_taxonomic:
+        val = st.session_state.get(f"filter_{col}", "(tous)")
+        if val != "(tous)":
+            taxonomic_filters[col] = val
+    
+    # Relire les valeurs INPN du session_state pour vérifier si un filtre taxonomique a été changé
+    inpn_filters = {}
+    for col in available_inpn:
+        val = st.session_state.get(f"filter_{col}", "(tous)")
+        if val != "(tous)":
+            inpn_filters[col] = val
+    
+    # Combiner les deux dictionnaires pour la requête
+    filters = {**taxonomic_filters, **inpn_filters}
     
     st.divider()
 
