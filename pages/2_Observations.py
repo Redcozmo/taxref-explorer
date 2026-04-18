@@ -163,8 +163,26 @@ with col_filters:
 
 # ── COLONNE GAUCHE : CARTE ──────────────────────────────────────────────
 with col_map:
-    centre = [gdf_filtered["lat"].mean(), gdf_filtered["lon"].mean()]
-    m = folium.Map(location=centre, zoom_start=8, tiles="CartoDB positron")
+    # Créer la carte
+    m = folium.Map(tiles="CartoDB positron")
+    
+    # Adapter l'emprise de la carte pour voir toutes les données avec 10% de marge
+    if not gdf_filtered.empty:
+        min_lat = gdf_filtered["lat"].min()
+        max_lat = gdf_filtered["lat"].max()
+        min_lon = gdf_filtered["lon"].min()
+        max_lon = gdf_filtered["lon"].max()
+        
+        # Ajouter 10% de marge
+        lat_margin = (max_lat - min_lat) * 0.1 if max_lat != min_lat else 0.01
+        lon_margin = (max_lon - min_lon) * 0.1 if max_lon != min_lon else 0.01
+        
+        bounds = [
+            [min_lat - lat_margin, min_lon - lon_margin],
+            [max_lat + lat_margin, max_lon + lon_margin]
+        ]
+        
+        m.fit_bounds(bounds)
     
     # Colonnes à inclure dans le popup (hors géométrie)
     popup_cols = [c for c in gdf_filtered.columns if c not in ("geometry", "lat", "lon")]
