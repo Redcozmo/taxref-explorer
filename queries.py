@@ -10,18 +10,18 @@ from db import get_con
 LIMIT_DEFAULT = None  # pas de limite par défaut
 
 
-def _where_regne(regne: str = None) -> tuple[str, list]:
+def _where_reign(reign: str = None) -> tuple[str, list]:
     """
     Retourne la clause WHERE et les paramètres pour filtrer par règne.
     Si règne est None, pas de filtre.
     """
-    if regne:
-        return '"REGNE" = ?', [regne]
+    if reign:
+        return '"REGNE" = ?', [reign]
     return "1=1", []
 
 
 @st.cache_data(ttl=3600)
-def get_regnes() -> list[str]:
+def get_reigns() -> list[str]:
     """Liste de tous les règnes disponibles dans la base complète."""
     df = get_con().execute(
         'SELECT DISTINCT "REGNE" FROM taxon WHERE "REGNE" IS NOT NULL ORDER BY "REGNE"'
@@ -37,10 +37,10 @@ def get_columns() -> list[str]:
 
 
 @st.cache_data(ttl=3600)
-def get_sample_values(column: str, regne: str = None, n: int = 5) -> list:
+def get_sample_values(column: str, reign: str = None, n: int = 5) -> list:
     """Retourne les n premières valeurs non nulles d'une colonne (pour le placeholder)."""
     try:
-        where, params = _where_regne(regne)
+        where, params = _where_reign(reign)
         df = get_con().execute(
             f'SELECT DISTINCT "{column}" FROM taxon '
             f'WHERE "{column}" IS NOT NULL AND {where} '
@@ -61,9 +61,9 @@ def get_sample_values(column: str, regne: str = None, n: int = 5) -> list:
 
 
 @st.cache_data(ttl=3600)
-def get_distinct_values(column: str, regne: str = None) -> list:
+def get_distinct_values(column: str, reign: str = None) -> list:
     """Valeurs distinctes non nulles d'une colonne, filtrées par règne."""
-    where, params = _where_regne(regne)
+    where, params = _where_reign(reign)
     df = get_con().execute(
         f'SELECT DISTINCT "{column}" FROM taxon '
         f'WHERE "{column}" IS NOT NULL AND {where} '
@@ -74,9 +74,9 @@ def get_distinct_values(column: str, regne: str = None) -> list:
 
 
 @st.cache_data(ttl=3600)
-def get_distinct_values_with_filters(column: str, filters: dict, regne: str = None) -> list:
+def get_distinct_values_with_filters(column: str, filters: dict, reign: str = None) -> list:
     """Valeurs distinctes non nulles d'une colonne, filtrées par règne ET autres colonnes."""
-    where_regne, params = _where_regne(regne)
+    where_reign, params = _where_reign(reign)
     
     # Construire la clause WHERE pour les autres filtres
     where_filters = " AND ".join(f'"{k}" = ?' for k in filters) if filters else "1=1"
@@ -84,7 +84,7 @@ def get_distinct_values_with_filters(column: str, filters: dict, regne: str = No
     
     df = get_con().execute(
         f'SELECT DISTINCT "{column}" FROM taxon '
-        f'WHERE "{column}" IS NOT NULL AND {where_regne} AND {where_filters} '
+        f'WHERE "{column}" IS NOT NULL AND {where_reign} AND {where_filters} '
         f'ORDER BY "{column}"',
         params + params_filters
     ).df()
@@ -92,27 +92,27 @@ def get_distinct_values_with_filters(column: str, filters: dict, regne: str = No
 
 
 @st.cache_data(ttl=600)
-def filter_taxons(filters: dict, regne: str = None, limit: int = LIMIT_DEFAULT) -> pd.DataFrame:
+def filter_taxons(filters: dict, reign: str = None, limit: int = LIMIT_DEFAULT) -> pd.DataFrame:
     """Filtre les taxons sur plusieurs colonnes (égalité stricte)."""
     if not filters:
         return pd.DataFrame()
 
-    where_regne, params_regne = _where_regne(regne)
+    where_reign, params_reign = _where_reign(reign)
     where_filters = " AND ".join(f'"{k}" = ?' for k in filters)
-    params = params_regne + list(filters.values())
+    params = params_reign + list(filters.values())
 
-    sql = f"SELECT * FROM taxon WHERE {where_regne} AND {where_filters}"
+    sql = f"SELECT * FROM taxon WHERE {where_reign} AND {where_filters}"
     if limit is not None:
         sql += f" LIMIT {limit}"
     return get_con().execute(sql, params).df()
 
 
 @st.cache_data(ttl=600)
-def search_taxons(column: str, value: str, regne: str = None, limit: int = LIMIT_DEFAULT) -> pd.DataFrame:
+def search_taxons(column: str, value: str, reign: str = None, limit: int = LIMIT_DEFAULT) -> pd.DataFrame:
     """Recherche partielle (ILIKE) dans une colonne textuelle."""
-    where_regne, params = _where_regne(regne)
+    where_reign, params = _where_reign(reign)
     params = params + [f"%{value}%"]
-    sql = f'SELECT * FROM taxon WHERE {where_regne} AND "{column}" ILIKE ?'
+    sql = f'SELECT * FROM taxon WHERE {where_reign} AND "{column}" ILIKE ?'
     if limit is not None:
         sql += f" LIMIT {limit}"
     return get_con().execute(sql, params).df()
@@ -127,9 +127,9 @@ def get_taxon_by_cd_nom(cd_nom: int) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=3600)
-def get_cd_nom_list(regne: str = None) -> list[int]:
+def get_cd_nom_list(reign: str = None) -> list[int]:
     """Retourne la liste triée de tous les CD_NOM existants."""
-    where, params = _where_regne(regne)
+    where, params = _where_reign(reign)
     df = get_con().execute(
         f'SELECT "CD_NOM" FROM taxon WHERE "CD_NOM" IS NOT NULL AND {where} ORDER BY "CD_NOM"',
         params
@@ -138,9 +138,9 @@ def get_cd_nom_list(regne: str = None) -> list[int]:
 
 
 @st.cache_data(ttl=3600)
-def count_by_column(column: str, regne: str = None) -> pd.DataFrame:
+def count_by_column(column: str, reign: str = None) -> pd.DataFrame:
     """Compte le nombre de taxons par valeur d'une colonne."""
-    where, params = _where_regne(regne)
+    where, params = _where_reign(reign)
     sql = f"""
         SELECT "{column}" AS valeur, COUNT(*) AS nb_taxons
         FROM taxon
@@ -152,9 +152,9 @@ def count_by_column(column: str, regne: str = None) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=3600)
-def total_count(regne: str = None) -> int:
+def total_count(reign: str = None) -> int:
     """Nombre de taxons (filtré par règne si fourni)."""
-    where, params = _where_regne(regne)
+    where, params = _where_reign(reign)
     return get_con().execute(
         f"SELECT COUNT(*) FROM taxon WHERE {where}", params
     ).fetchone()[0]
